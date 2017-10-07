@@ -318,7 +318,7 @@ class Comlink(object):
         center_lat = (coords.lat_a + coords.lat_b) / 2.0
         return center_lon, center_lat
 
-    def get_gauges_lon_lat(self, G=2):
+    def get_gauges_lon_lat(self, G = 2):
         """ Calculate and return longitude and latitude of G virtual gauges along the cml
         Parameters
         ----------
@@ -327,8 +327,11 @@ class Comlink(object):
 
         Returns
         -------
-        ((lon1, lon2, ..., lonN), (lat1, lat2, ..., latN))
+        ((lon1, lon2, ..., lonG), (lat1, lat2, ..., latG))
         """
+        if G < 2:
+            G = 2
+
         # get coordinates for both ends of each cml
         coords = self.get_coordinates()
         site_a_lon = coords.lon_a
