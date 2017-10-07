@@ -319,7 +319,16 @@ class Comlink(object):
         return center_lon, center_lat
 
     def get_gauges_lon_lat(self, G=2):
+        """ Calculate and return longitude and latitude of G virtual gauges along the cml
+        Parameters
+        ----------
+        G : integer
+            the number of virtual gauges along the cml (G >= 2)
 
+        Returns
+        -------
+        ((lon1, lon2, ..., lonN), (lat1, lat2, ..., latN))
+        """
         # get coordinates for both ends of each cml
         coords = self.get_coordinates()
         site_a_lon = coords.lon_a
