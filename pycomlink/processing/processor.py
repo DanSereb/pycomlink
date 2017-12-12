@@ -19,6 +19,8 @@ from pycomlink.processing.wet_antenna.wet_antenna import waa_adjust_baseline
 from pycomlink.processing.A_R_relation.A_R_relation import calc_R_from_A
 from pycomlink.processing.quality_control.simple import set_to_nan_if
 
+from pycomlink.processing.A_R_relation.A_R_relation import calc_R_from_A_min_max
+import numpy as np
 
 class Processor(object):
     def __init__(self, cml):
@@ -103,6 +105,48 @@ class Baseline(object):
             cml_ch.data['A'] = cml_ch.data['txrx'] - cml_ch.data['baseline']
         return self._cml
 
+    def calc_A_min_max(self, gT=1.0, gR=0.6, window=7):
+        """Calculate rain rate from attenuation using the A-R Relationship
+
+        Parameters
+        ----------
+        gT : float, optional
+            induced bias
+
+        gR : float, optional
+            induced bias
+
+        window: int, optional
+                number of previous measurements to use for zero-level calculation
+        Returns
+        -------
+        float or iterable of float
+            Ar_max
+
+        Note
+        ----
+        Based on: "Empirical Study of the Quantization Bias Effects in
+        Commercial Microwave Links Min/Max Attenuation
+        Measurements for Rain Monitoring" by OSTROMETZKY J., ESHEL A.
+
+        """
+
+        for ch_name, cml_ch in self._cml.channels.iteritems():
+            # quantization bias correction
+            Ac_max = cml_ch.data['tx_max'] - cml_ch.data['rx_min'] + (gT + gR) / 2
+            Ac_min = cml_ch.data['tx_min'] - cml_ch.data['rx_max'] - (gT + gR) / 2
+            
+            Ac_max[np.isnan(Ac_max)] = np.rint(Ac_max.mean())
+            Ac_min[np.isnan(Ac_min)] = np.rint(Ac_min.mean())
+                   
+            # zero-level calculation
+            Ar_max = np.full(Ac_max.shape, 0)
+            for i in range(len(Ac_max)):
+                Ar_max[i] = Ac_max[i] - np.array(min([Ac_min[j] for j in range(max(0, i - window), i + 1)]))
+                
+            cml_ch.data['Ar_max'] = Ar_max
+
+        return self._cml
 
 class A_R(object):
     def __init__(self, cml):
@@ -114,6 +158,12 @@ class A_R(object):
                                   L=cml.get_length(),
                                   f_GHz=cml.channel_1.f_GHz)
 
+        self.calc_R_min_max = cml_wrapper(cml,
+                                          calc_R_from_A_min_max,
+                                          ['Ar_max'],
+                                          'R',
+                                          L=cml.get_length(),
+                                          f_GHz=cml.channel_1.f_GHz)
 
 def cml_wrapper(cml, func,
                 vars_in, var_out,
