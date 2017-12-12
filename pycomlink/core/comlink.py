@@ -318,39 +318,6 @@ class Comlink(object):
         center_lat = (coords.lat_a + coords.lat_b) / 2.0
         return center_lon, center_lat
 
-    def get_gauges_lon_lat(self, G = 2):
-        """ Calculate and return longitude and latitude of G virtual gauges along the cml
-        Parameters
-        ----------
-        G : integer
-            the number of virtual gauges along the cml (G >= 2)
-
-        Returns
-        -------
-        ((lon1, lon2, ..., lonG), (lat1, lat2, ..., latG))
-        """
-        if G < 2:
-            G = 2
-
-        # get coordinates for both ends of each cml
-        coords = self.get_coordinates()
-        site_a_lon = coords.lon_a
-        site_a_lat = coords.lat_a
-        site_b_lon = coords.lon_b
-        site_b_lat = coords.lat_b
-
-        def GaugeCoords(t):
-            return site_a_lon + t*(site_b_lon - site_a_lon), site_a_lat + t*(site_b_lat - site_a_lat)
-
-        LonTuple=[]
-        LatTuple=[]
-        for i in range(1,G+1):
-            GaugeCoordsTup = GaugeCoords(float(i)/(G+1))
-            LonTuple.append(GaugeCoordsTup[0])
-            LatTuple.append(GaugeCoordsTup[1])
-
-        return tuple([tuple(LonTuple), tuple(LatTuple)])
-
     def append_data(self, cml):
         """ Append the data from the same CML stored in another Comlink object
 
@@ -393,3 +360,37 @@ def _channels_list_to_dict(channels):
     for i, channel in enumerate(channels):
         channel_dict['channel_' + str(i+1)] = channel
     return channel_dict
+
+    
+def get_gauges_lon_lat(cml, G = 2):
+    """ Calculate and return longitude and latitude of G virtual gauges along the cml
+    Parameters
+    ----------
+    G : integer
+    the number of virtual gauges along the cml (G >= 2)
+
+    Returns
+    -------
+    ((lon1, lon2, ..., lonG), (lat1, lat2, ..., latG))
+    """
+    if G < 2:
+        G = 2
+
+    # get coordinates for both ends of each cml
+    coords = cml.get_coordinates()
+    site_a_lon = coords.lon_a
+    site_a_lat = coords.lat_a
+    site_b_lon = coords.lon_b
+    site_b_lat = coords.lat_b
+
+    def GaugeCoords(t):
+        return site_a_lon + t*(site_b_lon - site_a_lon), site_a_lat + t*(site_b_lat - site_a_lat)
+
+    LonTuple=[]
+    LatTuple=[]
+    for i in range(1,G+1):
+        GaugeCoordsTup = GaugeCoords(float(i)/(G+1))
+        LonTuple.append(GaugeCoordsTup[0])
+        LatTuple.append(GaugeCoordsTup[1])
+
+    return tuple([tuple(LonTuple), tuple(LatTuple)])
